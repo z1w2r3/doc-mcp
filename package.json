@@ -1,0 +1,48 @@
+{
+  "name": "docxtpl-mcp",
+  "version": "0.2.2",
+  "description": "MCP server for generating Word documents using docxtpl",
+  "type": "module",
+  "bin": {
+    "docxtpl-mcp": "./bin/index.js"
+  },
+  "scripts": {
+    "postinstall": "node scripts/install.cjs",
+    "start": "node bin/index.js",
+    "prepublishOnly": "node scripts/prepublish.cjs",
+    "test": "node bin/index.js --version"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "src/",
+    "templates/",
+    "requirements.txt",
+    "create_templates.py",
+    "templates_metadata.json"
+  ],
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "docxtpl",
+    "word",
+    "document",
+    "generator",
+    "ai",
+    "claude",
+    "llm"
+  ],
+  "author": "docxtpl-mcp",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/docxtpl-mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/docxtpl-mcp/issues"
+  },
+  "homepage": "https://github.com/yourusername/docxtpl-mcp#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

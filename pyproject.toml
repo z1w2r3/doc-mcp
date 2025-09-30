@@ -1,0 +1,25 @@
+[project]
+name = "docxtpl-mcp"
+version = "0.1.0"
+description = "A Model Context Protocol server for generating Word documents using docxtpl"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp",
+    "docxtpl",
+    "python-docx",
+    "pydantic",
+    "python-dateutil",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.mcp]
+name = "docxtpl-mcp"
+description = "Generate Word documents from templates using docxtpl"
+version = "0.1.0"
+
+[tool.mcp.server]
+command = "python"
+args = ["-m", "src.server"]

@@ -1,0 +1,82 @@
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env
+
+# Development files
+.git/
+.gitignore
+test_server.py
+*.test.js
+*.spec.js
+
+# Documentation (keep only README.md)
+PRD.md
+TODO.md
+CLAUDE.md
+PROJECT_SUMMARY.md
+
+# Environment and config
+.env
+.env.example
+.env.local
+*.local
+
+# Output files (except templates)
+output/
+*.docx
+!templates/*.docx
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+node_modules/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.cache
+
+# Testing
+coverage/
+.nyc_output/
+jest.config.*
+
+# Optional - keep templates but not test outputs
+test_*.docx
+preview_*.docx
+
+# Keep the essential files
+!bin/
+!scripts/
+!src/
+!templates/
+!requirements.txt
+!create_templates.py
+!package.json
+!README.md

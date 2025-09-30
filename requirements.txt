@@ -1,0 +1,25 @@
+# MCP Server Requirements
+mcp>=0.1.0
+
+# Document Processing
+docxtpl>=0.20.0
+python-docx>=1.0.0
+
+# Template Engine
+Jinja2>=3.1.0
+
+# Data Validation
+pydantic>=2.0.0
+
+# Date Utilities
+python-dateutil>=2.8.0
+
+# Document Parsing
+pdfplumber>=0.10.0
+docx2txt>=0.8.0
+
+# Development Tools (optional)
+pytest>=7.0.0
+pytest-cov>=4.0.0
+black>=23.0.0
+pylint>=2.0.0

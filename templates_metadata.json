@@ -1,0 +1,469 @@
+{
+  "invoice": {
+    "name": "invoice.docx",
+    "description": "发票模板",
+    "required_fields": {
+      "company_name": {
+        "type": "string",
+        "description": "公司名称",
+        "example": "ABC Tech Inc."
+      },
+      "company_address": {
+        "type": "string",
+        "description": "公司地址",
+        "example": "123 Main St, Suite 100"
+      },
+      "company_email": {
+        "type": "string",
+        "format": "email",
+        "description": "公司邮箱",
+        "example": "info@abctech.com"
+      },
+      "company_phone": {
+        "type": "string",
+        "description": "公司电话",
+        "example": "+1-234-567-8900"
+      },
+      "customer_name": {
+        "type": "string",
+        "description": "客户名称",
+        "example": "John Smith"
+      },
+      "customer_address": {
+        "type": "string",
+        "description": "客户地址",
+        "example": "456 Oak Ave"
+      },
+      "customer_email": {
+        "type": "string",
+        "format": "email",
+        "description": "客户邮箱",
+        "example": "john@example.com"
+      },
+      "invoice_number": {
+        "type": "string",
+        "description": "发票号",
+        "example": "INV-2025-001"
+      },
+      "invoice_date": {
+        "type": "string",
+        "format": "date",
+        "description": "开票日期（ISO格式：YYYY-MM-DD）",
+        "example": "2025-01-28"
+      },
+      "due_date": {
+        "type": "string",
+        "format": "date",
+        "description": "到期日期（ISO格式：YYYY-MM-DD）",
+        "example": "2025-02-28"
+      },
+      "items": {
+        "type": "array",
+        "description": "商品列表",
+        "items": {
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string",
+              "description": "商品描述",
+              "example": "Web Development Service"
+            },
+            "quantity": {
+              "type": "number",
+              "description": "数量",
+              "example": 2
+            },
+            "unit_price": {
+              "type": "number",
+              "description": "单价",
+              "example": 1000
+            },
+            "total": {
+              "type": "number",
+              "description": "小计",
+              "example": 2000
+            }
+          }
+        }
+      },
+      "subtotal": {
+        "type": "number",
+        "description": "小计金额",
+        "example": 5000
+      },
+      "tax_rate": {
+        "type": "number",
+        "description": "税率（小数形式）",
+        "example": 0.13
+      },
+      "tax_amount": {
+        "type": "number",
+        "description": "税额",
+        "example": 650
+      },
+      "total": {
+        "type": "number",
+        "description": "总计",
+        "example": 5650
+      }
+    },
+    "optional_fields": {
+      "notes": {
+        "type": "string",
+        "description": "备注",
+        "example": "Thank you for your business!"
+      },
+      "terms": {
+        "type": "string",
+        "description": "条款",
+        "example": "Payment due within 30 days"
+      }
+    }
+  },
+  "report": {
+    "name": "report.docx",
+    "description": "报告模板",
+    "required_fields": {
+      "report_title": {
+        "type": "string",
+        "description": "报告标题",
+        "example": "Annual Performance Report"
+      },
+      "report_subtitle": {
+        "type": "string",
+        "description": "副标题",
+        "example": "Fiscal Year 2025"
+      },
+      "author_name": {
+        "type": "string",
+        "description": "作者姓名",
+        "example": "Jane Doe"
+      },
+      "department": {
+        "type": "string",
+        "description": "部门",
+        "example": "Finance Department"
+      },
+      "report_date": {
+        "type": "string",
+        "format": "date",
+        "description": "报告日期（ISO格式：YYYY-MM-DD）",
+        "example": "2025-01-28"
+      },
+      "executive_summary": {
+        "type": "string",
+        "description": "执行摘要",
+        "example": "This report provides a comprehensive analysis..."
+      },
+      "sections": {
+        "type": "array",
+        "description": "章节列表",
+        "items": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "章节标题",
+              "example": "Introduction"
+            },
+            "content": {
+              "type": "string",
+              "description": "章节内容",
+              "example": "This section introduces..."
+            },
+            "subsections": {
+              "type": "array",
+              "description": "子章节（可选）",
+              "items": {
+                "type": "object"
+              }
+            },
+            "table": {
+              "type": "object",
+              "description": "数据表（可选）"
+            }
+          }
+        }
+      },
+      "conclusions": {
+        "type": "string",
+        "description": "结论",
+        "example": "Based on our analysis..."
+      }
+    },
+    "optional_fields": {
+      "recommendations": {
+        "type": "array",
+        "description": "建议列表",
+        "items": {
+          "type": "string"
+        },
+        "example": ["Increase investment in R&D", "Expand market presence"]
+      },
+      "appendices": {
+        "type": "string",
+        "description": "附录",
+        "example": "Additional supporting documents..."
+      }
+    }
+  },
+  "contract": {
+    "name": "contract.docx",
+    "description": "合同模板",
+    "required_fields": {
+      "contract_type": {
+        "type": "string",
+        "description": "合同类型",
+        "example": "SERVICE"
+      },
+      "contract_number": {
+        "type": "string",
+        "description": "合同编号",
+        "example": "CTR-2025-001"
+      },
+      "contract_date": {
+        "type": "string",
+        "format": "date",
+        "description": "合同日期（ISO格式：YYYY-MM-DD）",
+        "example": "2025-01-28"
+      },
+      "party1_name": {
+        "type": "string",
+        "description": "甲方全称",
+        "example": "ABC Corporation"
+      },
+      "party1_address": {
+        "type": "string",
+        "description": "甲方地址",
+        "example": "123 Business Park"
+      },
+      "party1_short_name": {
+        "type": "string",
+        "description": "甲方简称",
+        "example": "Party A"
+      },
+      "party2_name": {
+        "type": "string",
+        "description": "乙方全称",
+        "example": "XYZ Limited"
+      },
+      "party2_address": {
+        "type": "string",
+        "description": "乙方地址",
+        "example": "456 Commerce Center"
+      },
+      "party2_short_name": {
+        "type": "string",
+        "description": "乙方简称",
+        "example": "Party B"
+      },
+      "whereas_clause": {
+        "type": "string",
+        "description": "鉴于条款",
+        "example": "Party A desires to engage Party B..."
+      },
+      "clauses": {
+        "type": "array",
+        "description": "条款列表",
+        "items": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "条款标题",
+              "example": "Scope of Work"
+            },
+            "content": {
+              "type": "string",
+              "description": "条款内容",
+              "example": "The scope of work includes..."
+            },
+            "subclauses": {
+              "type": "array",
+              "description": "子条款（可选）",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "number": {
+                    "type": "string",
+                    "description": "子条款编号"
+                  },
+                  "content": {
+                    "type": "string",
+                    "description": "子条款内容"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "party1_signatory": {
+        "type": "string",
+        "description": "甲方签字人",
+        "example": "John Doe"
+      },
+      "party1_title": {
+        "type": "string",
+        "description": "甲方职务",
+        "example": "CEO"
+      },
+      "party2_signatory": {
+        "type": "string",
+        "description": "乙方签字人",
+        "example": "Jane Smith"
+      },
+      "party2_title": {
+        "type": "string",
+        "description": "乙方职务",
+        "example": "Director"
+      },
+      "signature_date1": {
+        "type": "string",
+        "format": "date",
+        "description": "甲方签字日期（ISO格式：YYYY-MM-DD）",
+        "example": "2025-01-28"
+      },
+      "signature_date2": {
+        "type": "string",
+        "format": "date",
+        "description": "乙方签字日期（ISO格式：YYYY-MM-DD）",
+        "example": "2025-01-28"
+      }
+    },
+    "optional_fields": {}
+  },
+  "letter": {
+    "name": "letter.docx",
+    "description": "信函模板",
+    "required_fields": {
+      "sender_name": {
+        "type": "string",
+        "description": "发件人姓名",
+        "example": "John Smith"
+      },
+      "sender_address": {
+        "type": "string",
+        "description": "发件人地址",
+        "example": "123 Main Street"
+      },
+      "sender_city": {
+        "type": "string",
+        "description": "发件人城市",
+        "example": "New York"
+      },
+      "sender_state": {
+        "type": "string",
+        "description": "发件人州/省",
+        "example": "NY"
+      },
+      "sender_zip": {
+        "type": "string",
+        "description": "发件人邮编",
+        "example": "10001"
+      },
+      "sender_email": {
+        "type": "string",
+        "format": "email",
+        "description": "发件人邮箱",
+        "example": "john@example.com"
+      },
+      "sender_phone": {
+        "type": "string",
+        "description": "发件人电话",
+        "example": "555-1234"
+      },
+      "sender_title": {
+        "type": "string",
+        "description": "发件人职务",
+        "example": "Manager"
+      },
+      "letter_date": {
+        "type": "string",
+        "format": "date",
+        "description": "信函日期（ISO格式：YYYY-MM-DD）",
+        "example": "2025-01-28"
+      },
+      "recipient_name": {
+        "type": "string",
+        "description": "收件人姓名",
+        "example": "Jane Doe"
+      },
+      "recipient_title": {
+        "type": "string",
+        "description": "收件人职务",
+        "example": "Director"
+      },
+      "recipient_company": {
+        "type": "string",
+        "description": "收件人公司",
+        "example": "ABC Corporation"
+      },
+      "recipient_address": {
+        "type": "string",
+        "description": "收件人地址",
+        "example": "456 Oak Avenue"
+      },
+      "recipient_city": {
+        "type": "string",
+        "description": "收件人城市",
+        "example": "Los Angeles"
+      },
+      "recipient_state": {
+        "type": "string",
+        "description": "收件人州/省",
+        "example": "CA"
+      },
+      "recipient_zip": {
+        "type": "string",
+        "description": "收件人邮编",
+        "example": "90001"
+      },
+      "salutation": {
+        "type": "string",
+        "description": "称呼",
+        "example": "Dear Ms. Doe"
+      },
+      "body_paragraphs": {
+        "type": "array",
+        "description": "正文段落",
+        "items": {
+          "type": "string"
+        },
+        "example": [
+          "I am writing to express my interest...",
+          "Our company has been following...",
+          "I would appreciate the opportunity..."
+        ]
+      },
+      "closing": {
+        "type": "string",
+        "description": "结束语",
+        "example": "Sincerely"
+      }
+    },
+    "optional_fields": {
+      "subject": {
+        "type": "string",
+        "description": "主题",
+        "example": "Re: Business Proposal"
+      },
+      "enclosures": {
+        "type": "array",
+        "description": "附件列表",
+        "items": {
+          "type": "string"
+        },
+        "example": ["Resume", "Portfolio"]
+      },
+      "cc_list": {
+        "type": "array",
+        "description": "抄送列表",
+        "items": {
+          "type": "string"
+        },
+        "example": ["Manager", "HR Department"]
+      }
+    }
+  }
+}
