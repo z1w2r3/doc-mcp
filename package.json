@@ -1,7 +1,7 @@
 {
   "name": "docxtpl-mcp",
-  "version": "0.2.2",
-  "description": "MCP server for generating Word documents using docxtpl",
+  "version": "0.3.0",
+  "description": "MCP server for generating and parsing Word/PDF documents using docxtpl",
   "type": "module",
   "bin": {
     "docxtpl-mcp": "./bin/index.js"
@@ -28,6 +28,9 @@
     "word",
     "document",
     "generator",
+    "parser",
+    "pdf",
+    "docx",
     "ai",
     "claude",
     "llm"
