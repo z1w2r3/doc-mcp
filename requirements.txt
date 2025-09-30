@@ -17,6 +17,7 @@ python-dateutil>=2.8.0
 # Document Parsing
 pdfplumber>=0.10.0
 docx2txt>=0.8.0
+openpyxl>=3.0.0
 
 # Development Tools (optional)
 pytest>=7.0.0

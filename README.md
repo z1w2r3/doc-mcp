@@ -50,7 +50,7 @@ docxtpl-mcp
 - 📊 **丰富的模板** - 内置发票、报告、合同、信函等模板
 - 🛠️ **易于扩展** - 简单添加自定义模板和功能
 - 🔒 **安全可靠** - 完善的错误处理和输入验证
-- 📖 **文档解析** - 支持解析 DOCX 和 PDF 文档,提取结构化内容
+- 📖 **文档解析** - 支持解析 DOCX、PDF 和 Excel 文档,提取结构化内容
 
 ## 📋 目录
 
@@ -207,6 +207,21 @@ cp .env.example .env
 
 解析结果已转换为结构化 JSON 格式,包含每页的文本内容和表格数据。
 
+**用户：** 解析这个 Excel 文件 `/path/to/data.xlsx`,我只需要 "销售数据" 工作表
+
+**AI：** 好的,我来解析 Excel 文件...
+
+[AI 调用 parse_excel_document 工具]
+
+**AI：** Excel 文档解析成功！
+- 📄 文件：data.xlsx
+- 📊 工作表总数：5
+- 📋 已解析：销售数据
+- 💼 单元格数：1,200
+- 📐 公式数：15
+
+解析结果包含工作表的所有单元格数据、公式和合并单元格信息。
+
 ## 🛠️ 可用工具
 
 ### 文档生成工具
@@ -336,7 +351,7 @@ cp .env.example .env
 提取文档元数据信息
 
 **参数：**
-- `file_path` (string, 必需) - 文档文件的绝对路径 (DOCX 或 PDF)
+- `file_path` (string, 必需) - 文档文件的绝对路径 (DOCX、PDF 或 Excel)
 
 **返回：** JSON 格式的元数据,包括:
 - 文件基本信息 (文件名、大小、类型)
@@ -348,6 +363,30 @@ cp .env.example .env
 ```json
 {
   "file_path": "/path/to/document.pdf"
+}
+```
+
+#### 11. parse_excel_document
+解析 Excel 文档 (XLSX/XLS) 并提取结构化内容
+
+**参数：**
+- `file_path` (string, 必需) - Excel 文件的绝对路径
+- `sheet_name` (string, 可选) - 指定要解析的工作表名称 (默认: 解析所有工作表)
+- `include_formulas` (boolean, 可选) - 是否包含单元格公式 (默认: true)
+
+**返回：** JSON 格式的结构化内容,包括:
+- Excel 元数据 (创建者、修改时间等)
+- 工作表信息 (名称、行数、列数)
+- 单元格数据
+- 公式 (如果启用)
+- 合并单元格信息
+
+**示例：**
+```json
+{
+  "file_path": "/path/to/data.xlsx",
+  "sheet_name": "销售数据",
+  "include_formulas": true
 }
 ```
 

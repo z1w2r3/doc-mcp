@@ -26,6 +26,8 @@ import mcp.server.stdio
 # Document parsing libraries
 import pdfplumber
 import docx2txt
+from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
 
 # Configure logging
 logging.basicConfig(
@@ -219,13 +221,13 @@ class DocxTemplateServer:
                 ),
                 types.Tool(
                     name="extract_text_from_document",
-                    description="Quick text extraction from DOCX or PDF documents (without structure analysis)",
+                    description="Quick text extraction from DOCX, PDF, or Excel documents (without structure analysis)",
                     inputSchema={
                         "type": "object",
                         "properties": {
                             "file_path": {
                                 "type": "string",
-                                "description": "Absolute path to the document file (DOCX or PDF)"
+                                "description": "Absolute path to the document file (DOCX, PDF, or Excel)"
                             }
                         },
                         "required": ["file_path"]
@@ -233,13 +235,35 @@ class DocxTemplateServer:
                 ),
                 types.Tool(
                     name="get_document_metadata",
-                    description="Extract metadata information from DOCX or PDF documents",
+                    description="Extract metadata information from DOCX, PDF, or Excel documents",
                     inputSchema={
                         "type": "object",
                         "properties": {
                             "file_path": {
                                 "type": "string",
-                                "description": "Absolute path to the document file (DOCX or PDF)"
+                                "description": "Absolute path to the document file (DOCX, PDF, or Excel)"
+                            }
+                        },
+                        "required": ["file_path"]
+                    }
+                ),
+                types.Tool(
+                    name="parse_excel_document",
+                    description="Parse an Excel document (XLSX/XLS) and extract structured content including sheets, cells, and metadata",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "file_path": {
+                                "type": "string",
+                                "description": "Absolute path to the Excel file to parse"
+                            },
+                            "sheet_name": {
+                                "type": "string",
+                                "description": "Specific sheet name to parse (default: parse all sheets)"
+                            },
+                            "include_formulas": {
+                                "type": "boolean",
+                                "description": "Whether to include cell formulas (default: true)"
                             }
                         },
                         "required": ["file_path"]
@@ -310,6 +334,13 @@ class DocxTemplateServer:
                 elif name == "get_document_metadata":
                     return await self.get_document_metadata(
                         arguments.get("file_path")
+                    )
+
+                elif name == "parse_excel_document":
+                    return await self.parse_excel_document(
+                        arguments.get("file_path"),
+                        arguments.get("sheet_name"),
+                        arguments.get("include_formulas", True)
                     )
 
                 else:
@@ -1553,10 +1584,24 @@ Use document IDs with the `delete_document` tool to remove documents."""
                             text_parts.append(page_text)
                 text = "\n\n".join(text_parts)
 
+            elif file_ext in ['.xlsx', '.xls']:
+                # Use openpyxl for quick text extraction from Excel
+                wb = load_workbook(str(doc_path), data_only=True, read_only=True)
+                text_parts = []
+                for sheet_name in wb.sheetnames:
+                    ws = wb[sheet_name]
+                    text_parts.append(f"=== {sheet_name} ===\n")
+                    for row in ws.iter_rows(values_only=True):
+                        row_text = "\t".join([str(cell) if cell is not None else "" for cell in row])
+                        if row_text.strip():
+                            text_parts.append(row_text)
+                text = "\n".join(text_parts)
+                wb.close()
+
             else:
                 return [types.TextContent(
                     type="text",
-                    text=f"❌ 错误: 不支持的文件格式: {file_ext}\n仅支持 .docx 和 .pdf 文件"
+                    text=f"❌ 错误: 不支持的文件格式: {file_ext}\n仅支持 .docx, .pdf, .xlsx 和 .xls 文件"
                 )]
 
             # Statistics
@@ -1580,7 +1625,7 @@ Use document IDs with the `delete_document` tool to remove documents."""
 {text[:2000]}{'...' if len(text) > 2000 else ''}
 ```
 
-💡 提示: 如需完整结构化解析,请使用 parse_docx_document 或 parse_pdf_document"""
+💡 提示: 如需完整结构化解析,请使用 parse_docx_document, parse_pdf_document 或 parse_excel_document"""
             )]
 
         except Exception as e:
@@ -1656,10 +1701,46 @@ Use document IDs with the `delete_document` tool to remove documents."""
                         "modified": pdf_metadata.get('ModDate', ''),
                     })
 
+            elif file_ext in ['.xlsx', '.xls']:
+                wb = load_workbook(str(doc_path), data_only=True, read_only=True)
+
+                metadata.update({
+                    "sheets_count": len(wb.sheetnames),
+                    "sheet_names": wb.sheetnames,
+                })
+
+                # Add workbook properties if available
+                if wb.properties:
+                    props = wb.properties
+                    metadata.update({
+                        "creator": props.creator or "Unknown",
+                        "title": props.title or "",
+                        "subject": props.subject or "",
+                        "description": props.description or "",
+                        "keywords": props.keywords or "",
+                        "created": props.created.isoformat() if props.created else None,
+                        "modified": props.modified.isoformat() if props.modified else None,
+                        "last_modified_by": props.lastModifiedBy or "",
+                        "category": props.category or "",
+                    })
+
+                # Calculate statistics
+                total_cells = 0
+                for sheet_name in wb.sheetnames:
+                    ws = wb[sheet_name]
+                    if ws.max_row and ws.max_column:
+                        total_cells += ws.max_row * ws.max_column
+
+                metadata["statistics"] = {
+                    "total_cells": total_cells
+                }
+
+                wb.close()
+
             else:
                 return [types.TextContent(
                     type="text",
-                    text=f"❌ 错误: 不支持的文件格式: {file_ext}\n仅支持 .docx 和 .pdf 文件"
+                    text=f"❌ 错误: 不支持的文件格式: {file_ext}\n仅支持 .docx, .pdf, .xlsx 和 .xls 文件"
                 )]
 
             return [types.TextContent(
@@ -1682,6 +1763,169 @@ Use document IDs with the `delete_document` tool to remove documents."""
             return [types.TextContent(
                 type="text",
                 text=f"❌ **获取失败**: {str(e)}\n\n{traceback.format_exc()}"
+            )]
+
+    async def parse_excel_document(
+        self,
+        file_path: str,
+        sheet_name: Optional[str] = None,
+        include_formulas: bool = True
+    ) -> List[types.TextContent]:
+        """Parse an Excel document and extract structured content"""
+
+        try:
+            excel_path = Path(file_path)
+
+            # Validate file exists
+            if not excel_path.exists():
+                return [types.TextContent(
+                    type="text",
+                    text=f"❌ 错误: 文件不存在: {file_path}"
+                )]
+
+            # Validate file extension
+            if excel_path.suffix.lower() not in ['.xlsx', '.xls']:
+                return [types.TextContent(
+                    type="text",
+                    text=f"❌ 错误: 文件格式不正确。期望 .xlsx 或 .xls 文件,实际: {excel_path.suffix}"
+                )]
+
+            # Check file size
+            file_size_mb = excel_path.stat().st_size / (1024 * 1024)
+            if file_size_mb > MAX_FILE_SIZE_MB:
+                return [types.TextContent(
+                    type="text",
+                    text=f"❌ 错误: 文件大小超过限制 ({MAX_FILE_SIZE_MB} MB)"
+                )]
+
+            # Load workbook
+            wb = load_workbook(str(excel_path), data_only=False, read_only=True)
+
+            # Extract metadata
+            metadata = {
+                "filename": excel_path.name,
+                "file_size_mb": round(file_size_mb, 2),
+                "sheets_count": len(wb.sheetnames),
+                "sheet_names": wb.sheetnames,
+            }
+
+            # Add workbook properties if available
+            if wb.properties:
+                props = wb.properties
+                metadata.update({
+                    "creator": props.creator or "Unknown",
+                    "title": props.title or "",
+                    "subject": props.subject or "",
+                    "description": props.description or "",
+                    "created": props.created.isoformat() if props.created else None,
+                    "modified": props.modified.isoformat() if props.modified else None,
+                })
+
+            # Determine which sheets to parse
+            if sheet_name:
+                if sheet_name not in wb.sheetnames:
+                    wb.close()
+                    return [types.TextContent(
+                        type="text",
+                        text=f"❌ 错误: 工作表 '{sheet_name}' 不存在\n可用工作表: {', '.join(wb.sheetnames)}"
+                    )]
+                sheets_to_parse = [sheet_name]
+            else:
+                sheets_to_parse = wb.sheetnames
+
+            # Parse sheets
+            sheets_data = []
+            for ws_name in sheets_to_parse:
+                ws = wb[ws_name]
+
+                # Get sheet dimensions
+                if ws.max_row is None or ws.max_column is None:
+                    continue
+
+                # Extract cell data
+                data = []
+                for row in ws.iter_rows(min_row=1, max_row=ws.max_row, max_col=ws.max_column):
+                    row_data = []
+                    for cell in row:
+                        cell_value = cell.value
+                        # Convert datetime to ISO format string
+                        if isinstance(cell_value, (datetime, date)):
+                            cell_value = cell_value.isoformat()
+                        row_data.append(cell_value)
+                    data.append(row_data)
+
+                # Extract formulas if requested
+                formulas = {}
+                if include_formulas:
+                    # Reopen without read_only to access formulas
+                    wb_formulas = load_workbook(str(excel_path), data_only=False)
+                    ws_formulas = wb_formulas[ws_name]
+                    for row in ws_formulas.iter_rows():
+                        for cell in row:
+                            if cell.value and isinstance(cell.value, str) and cell.value.startswith('='):
+                                cell_ref = f"{get_column_letter(cell.column)}{cell.row}"
+                                formulas[cell_ref] = cell.value
+                    wb_formulas.close()
+
+                # Extract merged cells
+                merged_cells = []
+                if ws.merged_cells:
+                    merged_cells = [str(merged_range) for merged_range in ws.merged_cells.ranges]
+
+                sheet_info = {
+                    "name": ws_name,
+                    "rows": ws.max_row,
+                    "columns": ws.max_column,
+                    "data": data,
+                    "merged_cells": merged_cells,
+                }
+
+                if formulas:
+                    sheet_info["formulas"] = formulas
+
+                sheets_data.append(sheet_info)
+
+            wb.close()
+
+            # Construct result
+            result = {
+                "metadata": metadata,
+                "sheets": sheets_data,
+                "total_sheets_parsed": len(sheets_data)
+            }
+
+            # Calculate statistics
+            total_cells = sum(s["rows"] * s["columns"] for s in sheets_data)
+            total_formulas = sum(len(s.get("formulas", {})) for s in sheets_data)
+
+            return [types.TextContent(
+                type="text",
+                text=f"""✅ **Excel 文档解析成功**
+
+📄 **文件信息**:
+- 文件名: {metadata['filename']}
+- 大小: {metadata['file_size_mb']} MB
+- 工作表总数: {metadata['sheets_count']}
+- 已解析: {len(sheets_data)} 个工作表
+
+📊 **内容统计**:
+- 工作表名称: {', '.join([s['name'] for s in sheets_data])}
+- 总单元格数: {total_cells:,}
+- 公式数: {total_formulas}
+
+📋 **解析结果 (JSON)**:
+```json
+{json.dumps(result, indent=2, ensure_ascii=False)}
+```
+
+💡 提示: 可以使用 sheet_name 参数指定解析特定工作表"""
+            )]
+
+        except Exception as e:
+            logger.error(f"解析 Excel 文档时出错: {str(e)}")
+            return [types.TextContent(
+                type="text",
+                text=f"❌ **解析失败**: {str(e)}\n\n{traceback.format_exc()}"
             )]
 
     async def run(self):
