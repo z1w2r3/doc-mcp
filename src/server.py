@@ -1798,8 +1798,8 @@ Use document IDs with the `delete_document` tool to remove documents."""
                     text=f"❌ 错误: 文件大小超过限制 ({MAX_FILE_SIZE_MB} MB)"
                 )]
 
-            # Load workbook
-            wb = load_workbook(str(excel_path), data_only=False, read_only=True)
+            # Load workbook (read_only=False to access merged_cells)
+            wb = load_workbook(str(excel_path), data_only=False, read_only=False)
 
             # Extract metadata
             metadata = {
@@ -1857,15 +1857,11 @@ Use document IDs with the `delete_document` tool to remove documents."""
                 # Extract formulas if requested
                 formulas = {}
                 if include_formulas:
-                    # Reopen without read_only to access formulas
-                    wb_formulas = load_workbook(str(excel_path), data_only=False)
-                    ws_formulas = wb_formulas[ws_name]
-                    for row in ws_formulas.iter_rows():
+                    for row in ws.iter_rows():
                         for cell in row:
                             if cell.value and isinstance(cell.value, str) and cell.value.startswith('='):
                                 cell_ref = f"{get_column_letter(cell.column)}{cell.row}"
                                 formulas[cell_ref] = cell.value
-                    wb_formulas.close()
 
                 # Extract merged cells
                 merged_cells = []

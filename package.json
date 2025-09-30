@@ -1,6 +1,6 @@
 {
   "name": "docxtpl-mcp",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "MCP server for generating and parsing Word/PDF/Excel documents using docxtpl",
   "type": "module",
   "bin": {
