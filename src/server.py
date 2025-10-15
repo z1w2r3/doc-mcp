@@ -28,6 +28,8 @@ import pdfplumber
 import docx2txt
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
+from pptx import Presentation
+from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 # Configure logging
 logging.basicConfig(
@@ -268,6 +270,32 @@ class DocxTemplateServer:
                         },
                         "required": ["file_path"]
                     }
+                ),
+                types.Tool(
+                    name="parse_ppt_document",
+                    description="Parse a PowerPoint document (PPTX) and extract structured content including slides, text, tables, and metadata",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "file_path": {
+                                "type": "string",
+                                "description": "Absolute path to the PowerPoint file to parse"
+                            },
+                            "include_tables": {
+                                "type": "boolean",
+                                "description": "Whether to extract tables from slides (default: true)"
+                            },
+                            "include_images": {
+                                "type": "boolean",
+                                "description": "Whether to extract image information (default: false)"
+                            },
+                            "slides": {
+                                "type": "string",
+                                "description": "Slide range to parse (e.g., '1-5' or 'all'). Default is 'all'"
+                            }
+                        },
+                        "required": ["file_path"]
+                    }
                 )
             ]
 
@@ -341,6 +369,14 @@ class DocxTemplateServer:
                         arguments.get("file_path"),
                         arguments.get("sheet_name"),
                         arguments.get("include_formulas", True)
+                    )
+
+                elif name == "parse_ppt_document":
+                    return await self.parse_ppt_document(
+                        arguments.get("file_path"),
+                        arguments.get("include_tables", True),
+                        arguments.get("include_images", False),
+                        arguments.get("slides", "all")
                     )
 
                 else:
@@ -1598,10 +1634,38 @@ Use document IDs with the `delete_document` tool to remove documents."""
                 text = "\n".join(text_parts)
                 wb.close()
 
+            elif file_ext == '.pptx':
+                # Use python-pptx for quick text extraction from PowerPoint
+                prs = Presentation(str(doc_path))
+                text_parts = []
+                for idx, slide in enumerate(prs.slides, 1):
+                    text_parts.append(f"=== Slide {idx} ===")
+
+                    # Extract title
+                    if slide.shapes.title:
+                        text_parts.append(f"Title: {slide.shapes.title.text}")
+
+                    # Extract text from all shapes
+                    for shape in slide.shapes:
+                        if shape.has_text_frame and shape != slide.shapes.title:
+                            text = shape.text_frame.text.strip()
+                            if text:
+                                text_parts.append(text)
+
+                    # Extract notes
+                    if slide.has_notes_slide:
+                        notes_text = slide.notes_slide.notes_text_frame.text.strip()
+                        if notes_text:
+                            text_parts.append(f"Notes: {notes_text}")
+
+                    text_parts.append("")  # Empty line between slides
+
+                text = "\n".join(text_parts)
+
             else:
                 return [types.TextContent(
                     type="text",
-                    text=f"❌ 错误: 不支持的文件格式: {file_ext}\n仅支持 .docx, .pdf, .xlsx 和 .xls 文件"
+                    text=f"❌ 错误: 不支持的文件格式: {file_ext}\n仅支持 .docx, .pdf, .xlsx, .xls 和 .pptx 文件"
                 )]
 
             # Statistics
@@ -1737,10 +1801,40 @@ Use document IDs with the `delete_document` tool to remove documents."""
 
                 wb.close()
 
+            elif file_ext == '.pptx':
+                prs = Presentation(str(doc_path))
+
+                metadata.update({
+                    "total_slides": len(prs.slides),
+                    "slide_width": prs.slide_width,
+                    "slide_height": prs.slide_height,
+                })
+
+                # Add core properties if available
+                if prs.core_properties:
+                    props = prs.core_properties
+                    metadata.update({
+                        "author": props.author or "Unknown",
+                        "title": props.title or "",
+                        "subject": props.subject or "",
+                        "created": props.created.isoformat() if props.created else None,
+                        "modified": props.modified.isoformat() if props.modified else None,
+                        "last_modified_by": props.last_modified_by or "",
+                    })
+
+                # Calculate statistics
+                total_shapes = sum(len(slide.shapes) for slide in prs.slides)
+                total_tables = sum(1 for slide in prs.slides for shape in slide.shapes if shape.has_table)
+
+                metadata["statistics"] = {
+                    "total_shapes": total_shapes,
+                    "total_tables": total_tables
+                }
+
             else:
                 return [types.TextContent(
                     type="text",
-                    text=f"❌ 错误: 不支持的文件格式: {file_ext}\n仅支持 .docx, .pdf, .xlsx 和 .xls 文件"
+                    text=f"❌ 错误: 不支持的文件格式: {file_ext}\n仅支持 .docx, .pdf, .xlsx, .xls 和 .pptx 文件"
                 )]
 
             return [types.TextContent(
@@ -1919,6 +2013,205 @@ Use document IDs with the `delete_document` tool to remove documents."""
 
         except Exception as e:
             logger.error(f"解析 Excel 文档时出错: {str(e)}")
+            return [types.TextContent(
+                type="text",
+                text=f"❌ **解析失败**: {str(e)}\n\n{traceback.format_exc()}"
+            )]
+
+    async def parse_ppt_document(
+        self,
+        file_path: str,
+        include_tables: bool = True,
+        include_images: bool = False,
+        slides: str = "all"
+    ) -> List[types.TextContent]:
+        """Parse a PowerPoint document and extract structured content"""
+
+        try:
+            ppt_path = Path(file_path)
+
+            # Validate file exists
+            if not ppt_path.exists():
+                return [types.TextContent(
+                    type="text",
+                    text=f"❌ 错误: 文件不存在: {file_path}"
+                )]
+
+            # Validate file extension
+            if ppt_path.suffix.lower() not in ['.pptx']:
+                return [types.TextContent(
+                    type="text",
+                    text=f"❌ 错误: 文件格式不正确。期望 .pptx 文件,实际: {ppt_path.suffix}"
+                )]
+
+            # Check file size
+            file_size_mb = ppt_path.stat().st_size / (1024 * 1024)
+            if file_size_mb > MAX_FILE_SIZE_MB:
+                return [types.TextContent(
+                    type="text",
+                    text=f"❌ 错误: 文件大小超过限制 ({MAX_FILE_SIZE_MB} MB)"
+                )]
+
+            # Open presentation
+            prs = Presentation(str(ppt_path))
+
+            # Extract metadata
+            metadata = {
+                "filename": ppt_path.name,
+                "file_size_mb": round(file_size_mb, 2),
+                "total_slides": len(prs.slides),
+                "slide_width": prs.slide_width,
+                "slide_height": prs.slide_height,
+            }
+
+            # Add core properties if available
+            if prs.core_properties:
+                props = prs.core_properties
+                metadata.update({
+                    "author": props.author or "Unknown",
+                    "title": props.title or "",
+                    "subject": props.subject or "",
+                    "created": props.created.isoformat() if props.created else None,
+                    "modified": props.modified.isoformat() if props.modified else None,
+                    "last_modified_by": props.last_modified_by or "",
+                })
+
+            # Parse slide range
+            if slides == "all":
+                slide_indices = range(len(prs.slides))
+            else:
+                # Parse range like "1-5" or "1,3,5"
+                try:
+                    if '-' in slides:
+                        start, end = slides.split('-')
+                        slide_indices = range(int(start) - 1, int(end))
+                    elif ',' in slides:
+                        slide_indices = [int(s.strip()) - 1 for s in slides.split(',')]
+                    else:
+                        slide_indices = [int(slides) - 1]
+                except ValueError:
+                    return [types.TextContent(
+                        type="text",
+                        text=f"❌ 错误: 无效的幻灯片范围: {slides}"
+                    )]
+
+            # Extract content from slides
+            slides_data = []
+            total_tables = 0
+            total_images = 0
+            total_text_length = 0
+
+            for idx in slide_indices:
+                if idx >= len(prs.slides) or idx < 0:
+                    continue
+
+                slide = prs.slides[idx]
+                slide_info = {
+                    "slide_number": idx + 1,
+                    "title": "",
+                    "shapes": [],
+                    "tables": [],
+                    "images": []
+                }
+
+                # Extract title
+                if slide.shapes.title:
+                    slide_info["title"] = slide.shapes.title.text
+                    total_text_length += len(slide.shapes.title.text)
+
+                # Process all shapes
+                for shape in slide.shapes:
+                    # Skip title (already extracted)
+                    if shape == slide.shapes.title:
+                        continue
+
+                    # Extract text from text frames
+                    if shape.has_text_frame:
+                        text = shape.text_frame.text.strip()
+                        if text:
+                            shape_info = {
+                                "shape_type": "text",
+                                "text": text
+                            }
+                            slide_info["shapes"].append(shape_info)
+                            total_text_length += len(text)
+
+                    # Extract tables if requested
+                    if include_tables and shape.has_table:
+                        table = shape.table
+                        table_data = []
+                        for row in table.rows:
+                            row_data = [cell.text for cell in row.cells]
+                            table_data.append(row_data)
+
+                        table_info = {
+                            "rows": len(table.rows),
+                            "columns": len(table.columns),
+                            "data": table_data
+                        }
+                        slide_info["tables"].append(table_info)
+                        total_tables += 1
+
+                    # Extract image information if requested
+                    if include_images and shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                        image_info = {
+                            "shape_type": "picture",
+                            "width": shape.width,
+                            "height": shape.height,
+                            "left": shape.left,
+                            "top": shape.top
+                        }
+                        slide_info["images"].append(image_info)
+                        total_images += 1
+
+                # Extract notes if available
+                if slide.has_notes_slide:
+                    notes_text = slide.notes_slide.notes_text_frame.text.strip()
+                    if notes_text:
+                        slide_info["notes"] = notes_text
+                        total_text_length += len(notes_text)
+                else:
+                    slide_info["notes"] = ""
+
+                slides_data.append(slide_info)
+
+            # Construct result
+            result = {
+                "metadata": metadata,
+                "slides": slides_data,
+                "statistics": {
+                    "total_slides_parsed": len(slides_data),
+                    "total_text_length": total_text_length,
+                    "total_tables": total_tables,
+                    "total_images": total_images
+                }
+            }
+
+            return [types.TextContent(
+                type="text",
+                text=f"""✅ **PowerPoint 文档解析成功**
+
+📄 **文件信息**:
+- 文件名: {metadata['filename']}
+- 大小: {metadata['file_size_mb']} MB
+- 总幻灯片数: {metadata['total_slides']}
+- 已解析: {len(slides_data)} 张
+
+📝 **内容统计**:
+- 文本长度: {total_text_length:,} 字符
+- 表格数: {total_tables}
+- 图片数: {total_images}
+
+📋 **解析结果 (JSON)**:
+```json
+{json.dumps(result, indent=2, ensure_ascii=False)}
+```
+
+💡 提示: 可以使用 slides 参数指定解析特定幻灯片 (例如: "1-5" 或 "1,3,5")"""
+            )]
+
+        except Exception as e:
+            logger.error(f"解析 PowerPoint 文档时出错: {str(e)}")
             return [types.TextContent(
                 type="text",
                 text=f"❌ **解析失败**: {str(e)}\n\n{traceback.format_exc()}"

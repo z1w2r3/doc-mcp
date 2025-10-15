@@ -50,7 +50,7 @@ docxtpl-mcp
 - 📊 **丰富的模板** - 内置发票、报告、合同、信函等模板
 - 🛠️ **易于扩展** - 简单添加自定义模板和功能
 - 🔒 **安全可靠** - 完善的错误处理和输入验证
-- 📖 **文档解析** - 支持解析 DOCX、PDF 和 Excel 文档,提取结构化内容
+- 📖 **文档解析** - 支持解析 DOCX、PDF、Excel 和 PowerPoint 文档,提取结构化内容
 
 ## 📋 目录
 
@@ -222,6 +222,21 @@ cp .env.example .env
 
 解析结果包含工作表的所有单元格数据、公式和合并单元格信息。
 
+**用户：** 解析这个 PowerPoint 文件 `/path/to/presentation.pptx`,只解析前 5 张幻灯片
+
+**AI：** 好的,我来解析 PowerPoint 文件...
+
+[AI 调用 parse_ppt_document 工具]
+
+**AI：** PowerPoint 文档解析成功！
+- 📄 文件：presentation.pptx
+- 📊 总幻灯片数：20
+- 📋 已解析：5 张
+- 📝 文本长度：3,250 字符
+- 📊 表格数：2
+
+解析结果包含每张幻灯片的标题、文本内容、表格数据和备注。
+
 ## 🛠️ 可用工具
 
 ### 文档生成工具
@@ -333,7 +348,7 @@ cp .env.example .env
 ```
 
 #### 9. extract_text_from_document
-快速提取文档纯文本 (支持 DOCX 和 PDF)
+快速提取文档纯文本 (支持 DOCX、PDF、Excel 和 PowerPoint)
 
 **参数：**
 - `file_path` (string, 必需) - 文档文件的绝对路径
@@ -351,7 +366,7 @@ cp .env.example .env
 提取文档元数据信息
 
 **参数：**
-- `file_path` (string, 必需) - 文档文件的绝对路径 (DOCX、PDF 或 Excel)
+- `file_path` (string, 必需) - 文档文件的绝对路径 (DOCX、PDF、Excel 或 PowerPoint)
 
 **返回：** JSON 格式的元数据,包括:
 - 文件基本信息 (文件名、大小、类型)
@@ -387,6 +402,33 @@ cp .env.example .env
   "file_path": "/path/to/data.xlsx",
   "sheet_name": "销售数据",
   "include_formulas": true
+}
+```
+
+#### 12. parse_ppt_document
+解析 PowerPoint 文档 (PPTX) 并提取结构化内容
+
+**参数：**
+- `file_path` (string, 必需) - PowerPoint 文件的绝对路径
+- `include_tables` (boolean, 可选) - 是否提取表格 (默认: true)
+- `include_images` (boolean, 可选) - 是否提取图片信息 (默认: false)
+- `slides` (string, 可选) - 要解析的幻灯片范围,如 "1-5" 或 "1,3,5" (默认: "all")
+
+**返回：** JSON 格式的结构化内容,包括:
+- PowerPoint 元数据 (作者、创建时间等)
+- 每张幻灯片的标题和内容
+- 文本框内容
+- 表格数据
+- 图片信息 (如果启用)
+- 幻灯片备注
+
+**示例：**
+```json
+{
+  "file_path": "/path/to/presentation.pptx",
+  "include_tables": true,
+  "include_images": false,
+  "slides": "1-10"
 }
 ```
 
